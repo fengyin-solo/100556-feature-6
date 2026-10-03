@@ -20,7 +20,14 @@ function readStorage(): Record<string, EntryRow[]> {
   }
   try {
     const parsed = JSON.parse(raw) as Record<string, EntryRow[]>
-    return { ...fallback, ...parsed }
+    const merged = { ...fallback, ...parsed }
+    // 批生产记录加了「所属车间」归属字段：旧缓存里没有这一列就按新种子重播，归属以台账为准。
+    const batchRows = merged.batchrecord
+    if (!Array.isArray(batchRows) || batchRows.some((row) => !('所属车间' in row))) {
+      merged.batchrecord = clone(SEED_ROWS.batchrecord ?? [])
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+    }
+    return merged
   } catch {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(fallback))
     return fallback
