@@ -69,3 +69,20 @@ npm run build
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
 - 想回到初始数据：清掉浏览器里 `pharma-cleanroom:entries` 这一项，或调用 `resetModule(模块)`。
+
+## 批生产记录的归属与权限
+
+批生产记录不通用 `local-service.ts` 的流转，规则单独收在
+`frontend/src/api/batchrecord-service.ts`：
+
+- **台账归属**：`frontend/src/data/batch-ledger.ts` 是批记录归属台账（持久化在
+  `pharma-cleanroom:batch-ledger`）。车间主任按月把批号分到车间并圈定允许的工序范围；
+  记录上的车间字段只是台账镜像，车间与批号不一致时一律按台账口径统一。
+- **角色**：`frontend/src/data/org.ts` 登记了车间主任 / 操作人 / 复核人三岗，顶栏可切换值班身份。
+  只有归属车间的操作人能提交编制、只能填自己批号下的投料量；复核必须换人（操作人与复核人
+  不得为同一人），复核人签完才算过账；别的班组一律只读，越权提交一律拒绝并写明原因。
+- **状态次序**：待编制 → 编制中 → 已复核 → 已归档，只能逐级流转，越级的一律拦下；
+  生产工序越出台账范围会被打回重填并标异常。生产工序字典在 `frontend/src/data/processes.ts`，
+  登记、分配、校验几个入口共用这一份。
+- **归档**：同一批号重复归档只算一次；归档后状态落到成品检验台账（`finishedqc`，按批号去重），
+  本月归档数也按批号去重统计。
